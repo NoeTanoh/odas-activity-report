@@ -168,6 +168,20 @@ tbody tr:hover{background:var(--s2)}
 </nav>
 
 <main>
+
+<!-- CONFIG BANNER -->
+<div class="config-banner hidden" id="cfg-banner">
+  <span style="font-size:22px;flex-shrink:0">⚙️</span>
+  <div>
+    <p><strong>Configuration requise</strong> — Collez l'URL de votre Google Apps Script déployé pour activer la collecte de données.</p>
+    <p style="margin-top:4px">Suivez le guide <code>ODAS_Guide_Installation.html</code> pour obtenir cette URL (étape 4).</p>
+    <div class="config-input">
+      <input type="url" id="gs-url-input" placeholder="https://script.google.com/macros/s/AKf.../exec">
+      <button onclick="saveGsUrl()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ STEP 1 ══ -->
 <section class="sec vis" id="s0">
   <div class="sh"><div class="si ib">🗂️</div><div><h2>Identification de l'activité</h2><p>Informations générales : type, dates, axe stratégique, responsable.</p></div></div>
@@ -460,7 +474,7 @@ tbody tr:hover{background:var(--s2)}
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const GS_URL_KEY = 'odas_gs_url';
-let GS_URL = localStorage.getItem(GS_URL_KEY) || '';
+let GS_URL = 'https://script.google.com/macros/s/AKfycbzWu3QXBSAKIWVMZEY1b4ztdQX0z93LXeN6K5QSbPPKrhK3-fb-p-uamLyzXVw1BkKK/exec';
 let cur = 0, starVal = 0, livN = 0, pN = 0;
 const TOTAL = 6;
 
@@ -471,13 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-dsub').value = now;
   
   // Check if URL configured
-  if (GS_URL) {
-    document.getElementById('cfg-banner').classList.add('hidden');
-    document.getElementById('gs-url-input').value = GS_URL;
-    checkConnection();
-  } else {
-    setStatus('err', 'Non configuré');
-  }
+  // URL is hardcoded — check connection directly
+  checkConnection();
   
   addLiv();
   
@@ -494,7 +503,6 @@ function saveGsUrl() {
     return;
   }
   GS_URL = url;
-  localStorage.setItem(GS_URL_KEY, url);
   document.getElementById('cfg-banner').classList.add('hidden');
   toast('URL enregistrée !', 'ok');
   checkConnection();
