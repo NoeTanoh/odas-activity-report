@@ -190,7 +190,7 @@ tbody tr:hover{background:var(--s2)}
     <div class="fr c2">
       <div class="fd"><label>Titre de l'activité<span class="req">*</span></label><input id="f-titre" placeholder="Ex. Atelier de renforcement de capacités CdP Recherche"></div>
       <div class="fd"><label>Type d'activité<span class="req">*</span></label>
-        <select id="f-type" onchange="document.getElementById('ta').style.display=this.value==='autre'?'grid':'none'">
+        <select id="f-type" onchange="document.getElementById('ta').style.display=this.value==='autre'?'grid':'none';document.getElementById('profils-plaidoyer').style.display=(this.value&&this.value.toLowerCase().includes('plaidoyer'))?'block':'none'">
           <option value="">— Sélectionner —</option>
           <optgroup label="Renforcement des capacités">
             <option>Atelier de formation</option><option>Séminaire</option><option>Webinaire / Formation en ligne</option><option>Coaching / Mentorat</option>
@@ -224,6 +224,13 @@ tbody tr:hover{background:var(--s2)}
   <div class="card">
     <div class="ct">Localisation & Format</div>
     <div class="fr c3">
+      <div class="fd"><label>Niveau d'envergure<span class="req">*</span></label>
+        <div class="chips" id="env">
+          <span class="chip" onclick="pickC(this,'env');document.getElementById('langue-row').style.display=this.textContent==='Régional'||this.textContent==='International'?'block':'none'">National</span>
+          <span class="chip" onclick="pickC(this,'env');document.getElementById('langue-row').style.display='block'">Régional</span>
+          <span class="chip" onclick="pickC(this,'env');document.getElementById('langue-row').style.display='block'">International</span>
+        </div>
+      </div>
       <div class="fd"><label>Format<span class="req">*</span></label>
         <div class="chips" id="fmt">
           <span class="chip" onclick="pickC(this,'fmt')">Présentiel</span>
@@ -232,9 +239,33 @@ tbody tr:hover{background:var(--s2)}
         </div>
       </div>
       <div class="fd"><label>Pays / Région</label>
-        <select id="f-pays"><option value="">— Pays —</option><option>Bénin</option><option>Burkina Faso</option><option>Cameroun</option><option>Côte d'Ivoire</option><option>Guinée</option><option>Madagascar</option><option>Mali</option><option>Mauritanie</option><option>Niger</option><option>RCA</option><option>Sénégal</option><option>Togo</option><option>Régional (multi-pays)</option><option>International</option></select>
+        <select id="f-pays" onchange="document.getElementById('pays-autre-row').style.display=this.value==='autre'?'block':'none'">
+          <option value="">— Pays —</option>
+          <option>Bénin</option><option>Burkina Faso</option><option>Cameroun</option>
+          <option>Cap Vert</option><option>Congo Brazzaville</option><option>Côte d'Ivoire</option>
+          <option>Guinée Bissau</option><option>Guinée Conakry</option><option>Kenya</option>
+          <option>Madagascar</option><option>Mali</option><option>Niger</option>
+          <option>République centrafricaine (RCA)</option>
+          <option>République Démocratique du Congo (RDC)</option>
+          <option>Sénégal</option><option>Tchad</option><option>Togo</option>
+          <option>France</option><option>USA</option>
+          <option value="autre">Autre pays (préciser)</option>
+        </select>
+        <div id="pays-autre-row" style="display:none;margin-top:6px">
+          <input id="f-pays-autre" placeholder="Préciser le pays">
+        </div>
       </div>
       <div class="fd"><label>Ville / Lieu</label><input id="f-lieu" placeholder="Ex. Abidjan, ODAS Hub"></div>
+    </div>
+    <div id="langue-row" style="display:none;margin-top:12px">
+      <div class="fd"><label>Langue principale de l'activité</label>
+        <div class="chips" id="lng">
+          <span class="chip" onclick="pickC(this,'lng')">Francophone</span>
+          <span class="chip" onclick="pickC(this,'lng')">Anglophone</span>
+          <span class="chip" onclick="pickC(this,'lng')">Lusophone</span>
+          <span class="chip" onclick="pickC(this,'lng')">Mixte</span>
+        </div>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -242,12 +273,11 @@ tbody tr:hover{background:var(--s2)}
     <div class="fd" style="margin-bottom:14px">
       <label>Axe(s) stratégique(s) du Plan 2025–2029<span class="req">*</span></label>
       <div class="ac">
-        <div class="ach" onclick="this.classList.toggle('on')">1. Leadership & Gouvernance</div>
-        <div class="ach" onclick="this.classList.toggle('on')">2. Renforcement du Mouvement</div>
-        <div class="ach" onclick="this.classList.toggle('on')">3. Système de Santé</div>
-        <div class="ach" onclick="this.classList.toggle('on')">4. Engagement des Jeunes</div>
-        <div class="ach" onclick="this.classList.toggle('on')">5. Communication & Innovation</div>
-        <div class="ach" onclick="this.classList.toggle('on')">6. Plaidoyer & Partenariat</div>
+        <div class="ach" onclick="this.classList.toggle('on')">1. Renforcement du Mouvement</div>
+        <div class="ach" onclick="this.classList.toggle('on')">2. Recherche et changement de narratif</div>
+        <div class="ach" onclick="this.classList.toggle('on')">3. Leadership jeunes</div>
+        <div class="ach" onclick="this.classList.toggle('on')">4. Financement flexible</div>
+        <div class="ach" onclick="this.classList.toggle('on')">5. Gouvernance et structuration</div>
         <div class="ach" onclick="this.classList.toggle('on')">Transversal / MEAL</div>
       </div>
     </div>
@@ -268,6 +298,9 @@ tbody tr:hover{background:var(--s2)}
           <option>Marie Syr</option>
           <option>Olivia</option>
           <option>Reine</option>
+          <option>Marinette</option>
+          <option>Noé</option>
+          <option>Noël</option>
           <option>Teslanik</option>
           <option value="autre">Autre (non listé·e)</option>
         </select>
@@ -286,28 +319,62 @@ tbody tr:hover{background:var(--s2)}
   <div class="sh"><div class="si io">👥</div><div><h2>Participants</h2><p>Profil, données démographiques et liste nominative.</p></div></div>
   <div class="card">
     <div class="ct">Profils représentés</div>
-    <div class="cg">
+    <div class="cg" id="profils-std">
       <label class="ci"><input type="checkbox"> OSC membres ODAS</label>
       <label class="ci"><input type="checkbox"> Jeunes / J-Lab</label>
       <label class="ci"><input type="checkbox"> Professionnels de santé</label>
       <label class="ci"><input type="checkbox"> Chercheurs / académiques</label>
       <label class="ci"><input type="checkbox"> Bailleurs / donateurs</label>
       <label class="ci"><input type="checkbox"> Décideurs politiques</label>
+      <label class="ci"><input type="checkbox"> ONG Internationale (PTS et autres)</label>
+      <label class="ci"><input type="checkbox"> Activiste individuel·le</label>
       <label class="ci"><input type="checkbox"> Staff Centre ODAS</label>
       <label class="ci"><input type="checkbox"> Journalistes / Médias</label>
       <label class="ci"><input type="checkbox"> Autre</label>
     </div>
+    <div id="profils-plaidoyer" style="display:none;margin-top:10px;padding:12px;background:var(--lb);border-radius:10px;border:1.5px solid #93C5FD">
+      <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🎯 Profils spécifiques — Activité de plaidoyer</div>
+      <div class="cg">
+        <label class="ci"><input type="checkbox"> Décideur·e politique</label>
+        <label class="ci"><input type="checkbox"> Parlementaire</label>
+        <label class="ci"><input type="checkbox"> Cadre technique</label>
+        <label class="ci"><input type="checkbox"> Institution régionale / continentale</label>
+        <label class="ci"><input type="checkbox"> Média</label>
+        <label class="ci"><input type="checkbox"> Leader d'opinion</label>
+        <label class="ci"><input type="checkbox"> Autre</label>
+      </div>
+    </div>
   </div>
   <div class="card">
     <div class="ct">Données de participation</div>
-    <div class="fr c3">
+    <div class="ct" style="margin-top:14px">Désagrégation par genre</div>
+    <div class="fr c2" style="margin-bottom:6px">
       <div class="fd"><label>Total participants</label><input type="number" id="f-tot" min="0" value="0" oninput="calcStats()"></div>
-      <div class="fd"><label>Dont femmes</label><input type="number" id="f-fem" min="0" value="0" oninput="calcStats()"></div>
-      <div class="fd"><label>Dont hommes</label><input type="number" id="f-hom" min="0" value="0" oninput="calcStats()"></div>
-    </div>
-    <div class="fr c3">
-      <div class="fd"><label>Dont jeunes (15–35 ans)</label><input type="number" id="f-jeu" min="0" value="0"></div>
       <div class="fd"><label>Pays représentés</label><input type="number" id="f-np" min="1" value="1"></div>
+    </div>
+    <div class="fr c2">
+      <div class="fd"><label>Hommes</label><input type="number" id="f-hom" min="0" value="0" oninput="calcStats()"></div>
+      <div class="fd"><label>Femmes</label><input type="number" id="f-fem" min="0" value="0" oninput="calcStats()"></div>
+    </div>
+    <div class="fr c2">
+      <div class="fd"><label>Non binaire</label><input type="number" id="f-nb" min="0" value="0" oninput="calcStats()"></div>
+      <div class="fd"><label>Ne préfère pas partager</label><input type="number" id="f-npp" min="0" value="0" oninput="calcStats()"></div>
+    </div>
+    <div class="ct" style="margin-top:14px">Désagrégation par tranche d'âge (ICM)</div>
+    <div class="fr c2">
+      <div class="fd"><label>5 à 13 ans</label><input type="number" id="f-a1" min="0" value="0"></div>
+      <div class="fd"><label>14 à 15 ans</label><input type="number" id="f-a2" min="0" value="0"></div>
+    </div>
+    <div class="fr c2">
+      <div class="fd"><label>16 à 17 ans</label><input type="number" id="f-a3" min="0" value="0"></div>
+      <div class="fd"><label>18 à 24 ans</label><input type="number" id="f-a4" min="0" value="0"></div>
+    </div>
+    <div class="fr c2">
+      <div class="fd"><label>25 à 35 ans</label><input type="number" id="f-a5" min="0" value="0"></div>
+      <div class="fd"><label>36 à 49 ans</label><input type="number" id="f-a6" min="0" value="0"></div>
+    </div>
+    <div class="fr c2">
+      <div class="fd"><label>50 ans et plus</label><input type="number" id="f-a7" min="0" value="0"></div>
       <div class="fd"><label>Intervenants externes</label><input type="number" id="f-ext" min="0" value="0"></div>
     </div>
     <div class="stats">
@@ -319,7 +386,37 @@ tbody tr:hover{background:var(--s2)}
   <div class="card">
     <div class="ct">Liste nominative (optionnelle)</div>
     <div class="tw"><table id="ptbl"><thead><tr><th>#</th><th>Nom & Prénom</th><th>Organisation</th><th>Pays</th><th>Genre</th><th>Email</th><th></th></tr></thead><tbody id="ptb"></tbody></table></div>
-    <button class="add-row" onclick="addP()">＋ Ajouter participant</button>
+    <div style="margin-top:14px">
+      <div class="ct">Nombre de participants par profil</div>
+      <div class="fr c2">
+        <div class="fd"><label>OSC membres ODAS</label><input type="number" id="pp-osc" min="0" value="0"></div>
+        <div class="fd"><label>Jeunes / J-Lab</label><input type="number" id="pp-jlab" min="0" value="0"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fd"><label>Professionnels de santé</label><input type="number" id="pp-sante" min="0" value="0"></div>
+        <div class="fd"><label>Chercheurs / académiques</label><input type="number" id="pp-rech" min="0" value="0"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fd"><label>Bailleurs / donateurs</label><input type="number" id="pp-bail" min="0" value="0"></div>
+        <div class="fd"><label>ONG Internationale</label><input type="number" id="pp-ong" min="0" value="0"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fd"><label>Activistes individuels</label><input type="number" id="pp-activ" min="0" value="0"></div>
+        <div class="fd"><label>Staff Centre ODAS</label><input type="number" id="pp-staff" min="0" value="0"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fd"><label>Journalistes / Médias</label><input type="number" id="pp-media" min="0" value="0"></div>
+        <div class="fd"><label>Autres profils</label><input type="number" id="pp-autre" min="0" value="0"></div>
+      </div>
+    </div>
+    <div class="fr c1" style="margin-top:10px">
+      <div class="fd">
+        <label>📋 Verser la liste de présence <span style="font-size:11px;color:var(--mu)">— si disponible (Excel, PDF, Word, ZIP)</span></label>
+        <input type="file" id="f-liste-presence" accept=".pdf,.xls,.xlsx,.doc,.docx,.csv,.zip" style="font-family:'DM Sans',sans-serif;font-size:13px;padding:8px 10px;border:1.5px solid var(--bd);border-radius:8px;background:var(--bg);width:100%">
+        <span class="hint" style="margin-top:4px;display:block">💡 Pour plusieurs fichiers, les compresser en archive ZIP d'abord</span>
+      </div>
+    </div>
+    <button class="add-row" style="margin-top:8px" onclick="addP()">＋ Ou saisir manuellement (liste nominative)</button>
   </div>
   <div class="br"><button class="btn bp" onclick="prev()">← Retour</button><button class="btn bn" onclick="next()">Déroulement →</button></div>
 </section>
@@ -335,6 +432,7 @@ tbody tr:hover{background:var(--s2)}
   <div class="card">
     <div class="ct">Résultats</div>
     <div class="fr c1"><div class="fd"><label>Résumé narratif<span class="req">*</span></label><textarea id="f-res" rows="5" placeholder="Décrire le déroulement, les points abordés, les échanges clés..."></textarea></div></div>
+    <div class="fr c1"><div class="fd"><label>Principales réalisations</label><span class="hint">Lister les résultats concrets obtenus lors de cette activité</span><textarea id="f-real" rows="4" placeholder="— Réalisation 1 :&#10;— Réalisation 2 :&#10;— Réalisation 3 :"></textarea></div></div>
     <div class="fr c2">
       <div class="fd"><label>Objectifs atteints ?</label>
         <select id="f-oa" onchange="document.getElementById('oa-c').style.display=this.value&&this.value!=='complet'?'grid':'none'">
@@ -544,6 +642,8 @@ function calcStats() {
   const t = +document.getElementById('f-tot').value || 0;
   const f = +document.getElementById('f-fem').value || 0;
   const h = +document.getElementById('f-hom').value || 0;
+  const nb = +document.getElementById('f-nb').value || 0;
+  const npp = +document.getElementById('f-npp').value || 0;
   document.getElementById('st-t').textContent = t;
   document.getElementById('st-f').textContent = t > 0 ? Math.round(f/t*100)+'%' : '—';
   document.getElementById('st-h').textContent = t > 0 ? Math.round(h/t*100)+'%' : '—';
@@ -572,14 +672,27 @@ function addP() {
 // ── LIVRABLES ─────────────────────────────────────────────────────────────────
 function addLiv() {
   livN++;
+  const id = `lv${livN}`;
   const d = document.createElement('div');
-  d.id = `lv${livN}`;
-  d.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px;padding:10px;background:var(--bg);border:1.5px solid var(--bd);border-radius:8px';
+  d.id = id;
+  d.style.cssText = 'margin-bottom:10px;padding:12px;background:var(--bg);border:1.5px solid var(--bd);border-radius:8px';
   d.innerHTML = `
-    <div class="fd"><label>Titre du livrable</label><input class="ti" placeholder="Ex. Rapport de la réunion" style="width:100%"></div>
-    <div class="fd"><label>Statut</label><select class="ti"><option>✅ Finalisé</option><option>🔄 En cours</option><option>📅 À venir</option></select></div>
-    <div class="fd"><label>Date prévue</label><input type="date" class="ti"></div>
-    <button class="del" onclick="document.getElementById('lv${livN}').remove()" style="margin-bottom:2px">×</button>`;
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+      <div class="fd"><label>Titre du livrable</label><input class="ti" placeholder="Ex. Rapport de la réunion" style="width:100%"></div>
+      <div class="fd"><label>Statut</label><select class="ti"><option>✅ Finalisé</option><option>🔄 En cours</option><option>📅 À venir</option></select></div>
+      <div class="fd"><label>Date prévue</label><input type="date" class="ti"></div>
+      <button class="del" onclick="document.getElementById('${id}').remove()" style="margin-bottom:2px">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fd">
+        <label>📎 Fichier (max 5 Mo) <span style="font-size:11px;color:var(--mu)">— ZIP recommandé pour plusieurs fichiers</span></label>
+        <input type="file" class="ti liv-file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.jpg,.png" style="padding:5px">
+      </div>
+      <div class="fd">
+        <label>🔗 Lien (si fichier > 5 Mo)</label>
+        <input type="url" class="ti liv-link" placeholder="https://drive.google.com/...">
+      </div>
+    </div>`;
   document.getElementById('liv-list').appendChild(d);
 }
 
@@ -691,11 +804,15 @@ function collect() {
     titre_fonction: v('f-titre-fn'),
     profils_participants: profils,
     total_participants: tot, femmes: fem, hommes: +v('f-hom')||0,
-    jeunes: +v('f-jeu')||0, pays_representes: +v('f-np')||0,
+    non_binaire: +v('f-nb')||0, ne_prefere_pas: +v('f-npp')||0,
+    age_5_13: +v('f-a1')||0, age_14_15: +v('f-a2')||0, age_16_17: +v('f-a3')||0,
+    age_18_24: +v('f-a4')||0, age_25_35: +v('f-a5')||0, age_36_49: +v('f-a6')||0, age_50plus: +v('f-a7')||0,
+    pays_representes: +v('f-np')||0,
     intervenants_externes: +v('f-ext')||0,
     pct_femmes: tot>0 ? Math.round(fem/tot*100) : 0,
     objectif_general: v('f-obj'), objectifs_specifiques: v('f-objs'),
     resume_narratif: v('f-res'),
+    principales_realisations: v('f-real'),
     objectifs_atteints: v('f-oa'), satisfaction_etoiles: starVal,
     precision_objectifs: v('f-oa-p'),
     icm_ref: v('f-icm'), icm_valeur: v('f-icmv'),
