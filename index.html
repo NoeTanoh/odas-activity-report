@@ -275,12 +275,13 @@ tbody tr:hover{background:var(--s2)}
     <div class="fd" style="margin-bottom:14px">
       <label>Axe(s) stratégique(s) du Plan 2025–2029<span class="req">*</span></label>
       <div class="ac">
-        <div class="ach" onclick="this.classList.toggle('on')">1. Renforcement du Mouvement</div>
-        <div class="ach" onclick="this.classList.toggle('on')">2. Recherche et changement de narratif</div>
-        <div class="ach" onclick="this.classList.toggle('on')">3. Leadership jeunes</div>
-        <div class="ach" onclick="this.classList.toggle('on')">4. Financement flexible</div>
-        <div class="ach" onclick="this.classList.toggle('on')">5. Gouvernance et structuration</div>
-        <div class="ach" onclick="this.classList.toggle('on')">Transversal / MEAL</div>
+        <div class="ach" onclick="this.classList.toggle('on')">1. Leadership et Gouvernance</div>
+        <div class="ach" onclick="this.classList.toggle('on')">2. Renforcement du Mouvement</div>
+        <div class="ach" onclick="this.classList.toggle('on')">3. Surveillance de l'Opposition et Communication Stratégique</div>
+        <div class="ach" onclick="this.classList.toggle('on')">4. Augmentation des Ressources Financières Flexibles</div>
+        <div class="ach" onclick="this.classList.toggle('on')">5. Recherche, Apprentissage et Changement de Narratif</div>
+        <div class="ach" onclick="this.classList.toggle('on')">6. Suivi, Évaluation et Capitalisation</div>
+        <div class="ach" onclick="this.classList.toggle('on')">Approches transversales jeunes et féministes</div>
       </div>
     </div>
     <div class="fr c2">
@@ -310,6 +311,22 @@ tbody tr:hover{background:var(--s2)}
           <input id="f-staff-autre" placeholder="Votre prénom et nom complets">
         </div>
         <input id="f-titre-fn" placeholder="Votre titre / fonction  (ex. Responsable MEAL)" style="margin-top:6px">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">Bailleur(s) de l'activité</div>
+    <div class="fd" style="margin-bottom:14px">
+      <label>Bailleur(s) ayant supporté cette activité <span style="font-size:11.5px;color:var(--mu)">(plusieurs choix possibles)</span></label>
+      <div class="cg">
+        <label class="ci"><input type="checkbox" id="bail-sida"> SIDA</label>
+        <label class="ci"><input type="checkbox" id="bail-mofa"> MOFA</label>
+        <label class="ci"><input type="checkbox" id="bail-packard"> Packard</label>
+        <label class="ci"><input type="checkbox" id="bail-gates"> Fondation Bill et Melinda Gates</label>
+        <label class="ci"><input type="checkbox" id="bail-autre-cb" onchange="document.getElementById('bail-autre-row').style.display=this.checked?'block':'none'"> Autre (à préciser)</label>
+      </div>
+      <div id="bail-autre-row" style="display:none;margin-top:8px">
+        <input id="f-bail-autre" placeholder="Préciser le ou les autres bailleurs">
       </div>
     </div>
   </div>
@@ -435,6 +452,37 @@ tbody tr:hover{background:var(--s2)}
     <div class="ct">Principales réalisations</div>
     <div class="fr c1"><div class="fd"><label>Résumé narratif<span class="req">*</span></label><textarea id="f-res" rows="5" placeholder="Décrire le déroulement, les points abordés, les échanges clés..."></textarea></div></div>
     <div class="fr c1"><div class="fd"><label>Principales réalisations</label><span class="hint">Lister les résultats concrets obtenus lors de cette activité</span><textarea id="f-real" rows="4" placeholder="— Réalisation 1 :&#10;— Réalisation 2 :&#10;— Réalisation 3 :"></textarea></div></div>
+    <div class="card" style="margin-bottom:0;border:none;padding:0">
+      <div class="ct">Changements observés</div>
+      <div class="fr c2" style="margin-bottom:10px">
+        <div class="fd">
+          <label>Des changements observables ont-ils émergé ?</label>
+          <div class="chips" id="chg-obs">
+            <span class="chip" onclick="pickC(this,'chg-obs');document.getElementById('chg-detail-row').style.display=this.textContent==='Oui'?'block':'none'">Oui</span>
+            <span class="chip" onclick="pickC(this,'chg-obs');document.getElementById('chg-detail-row').style.display='none'">Non</span>
+          </div>
+        </div>
+      </div>
+      <div id="chg-detail-row" style="display:none">
+        <div class="fd" style="margin-bottom:10px">
+          <label>Type de changement observé <span style="font-size:11.5px;color:var(--mu)">(plusieurs choix possibles)</span></label>
+          <div class="cg">
+            <label class="ci"><input type="checkbox"> Changement de connaissance</label>
+            <label class="ci"><input type="checkbox"> Changement d'attitude</label>
+            <label class="ci"><input type="checkbox"> Engagement public</label>
+            <label class="ci"><input type="checkbox"> Adoption d'une recommandation</label>
+            <label class="ci"><input type="checkbox"> Renforcement d'alliance</label>
+            <label class="ci"><input type="checkbox"> Mobilisation de ressources</label>
+            <label class="ci"><input type="checkbox"> Réduction de la stigmatisation</label>
+            <label class="ci"><input type="checkbox" id="chg-autre-cb" onchange="document.getElementById('chg-autre-row').style.display=this.checked?'block':'none'"> Autre (à préciser)</label>
+          </div>
+          <div id="chg-autre-row" style="display:none;margin-top:6px">
+            <input id="f-chg-autre" placeholder="Préciser le type de changement">
+          </div>
+        </div>
+        <div class="fr c1"><div class="fd"><label>Décrire brièvement le changement observé</label><span class="hint">Concret et vérifiable si possible</span><textarea id="f-chg-desc" rows="3" placeholder="Ex. Le ministre a publiquement mentionné nos recommandations lors de son discours..."></textarea></div></div>
+      </div>
+    </div>
     <div class="fr c2">
       <div class="fd"><label>Objectifs atteints ?</label>
         <select id="f-oa" onchange="document.getElementById('oa-c').style.display=this.value&&this.value!=='complet'?'grid':'none'">
@@ -473,10 +521,13 @@ tbody tr:hover{background:var(--s2)}
       <label class="ci"><input type="checkbox"> Compte-rendu / PV</label>
       <label class="ci"><input type="checkbox"> Supports de formation</label>
       <label class="ci"><input type="checkbox"> Note de recommandations</label>
+      <label class="ci"><input type="checkbox"> Note de plaidoyer</label>
       <label class="ci"><input type="checkbox"> Rapport de recherche</label>
       <label class="ci"><input type="checkbox"> Outil / Guide / Toolkit</label>
       <label class="ci"><input type="checkbox"> Plan d'action</label>
       <label class="ci"><input type="checkbox"> Contenu digital / Post</label>
+      <label class="ci"><input type="checkbox"> Vidéo / contenu média</label>
+      <label class="ci"><input type="checkbox"> Engagement / accord formel</label>
       <label class="ci"><input type="checkbox"> Aucun livrable formel</label>
     </div>
   </div>
@@ -489,8 +540,17 @@ tbody tr:hover{background:var(--s2)}
     <div class="ct">Engagements & Suite</div>
     <div class="fr c1"><div class="fd"><label>Points d'action / engagements pris</label><textarea id="f-act" rows="4" placeholder="— Engagement 1 :&#10;— Engagement 2 :"></textarea></div></div>
     <div class="fr c2">
-      <div class="fd"><label>Suite prévue ?</label><select id="f-suite"><option value="">— Sélectionner —</option><option>Oui — activité de suivi planifiée</option><option>Oui — rapport à finaliser</option><option>Non — activité clôturée</option><option>À déterminer</option></select></div>
+      <div class="fd"><label>Suite prévue ?</label><select id="f-suite"><option value="">— Sélectionner —</option>
+            <option>Réunion de suivi</option>
+            <option>Appui technique</option>
+            <option>Plaidoyer ciblé</option>
+            <option>Production de contenu</option>
+            <option>Soumission bailleur</option>
+            <option>Non, activité clôturée</option>
+            <option>Autre</option>
+          </select></div>
       <div class="fd"><label>Date activité de suivi</label><input type="date" id="f-sd"></div>
+      <div class="fd"><label>Responsable du suivi</label><input id="f-resp-suivi" placeholder="Prénom NOM"></div>
     </div>
   </div>
   <div class="br"><button class="btn bp" onclick="prev()">← Retour</button><button class="btn bn" onclick="next()">Médias & Leçons →</button></div>
@@ -511,11 +571,11 @@ tbody tr:hover{background:var(--s2)}
     <div class="fr c1"><div class="fd"><label>Lien de partage (Google Drive, Dropbox…)</label><input id="f-plnk" type="url" placeholder="https://drive.google.com/..."></div></div>
   </div>
   <div class="card">
-    <div class="ct">💡 Leçons apprises</div>
+    <div class="ct">💡 Leçons apprises, Opportunités & Risques</div>
     <div id="lec-list">
       <div class="lecon">
         <div class="fr c2" style="margin-bottom:10px">
-          <div class="fd"><label>Type</label><select class="lt" onchange="updLec(this)"><option value="d">🔴 Défi / Problème</option><option value="b">🟢 Bonne pratique</option><option value="c">🟣 Capitalisation</option></select></div>
+          <div class="fd"><label>Type</label><select class="lt" onchange="updLec(this)"><option value="d">💡 Leçons apprises</option><option value="b">🎯 Opportunités de plaidoyer identifiées</option><option value="c">⚠️ Risques / tensions / signaux anti-droits</option></select></div>
           <div class="fd"><label>Domaine</label><select><option>Organisation / logistique</option><option>Contenu / pédagogie</option><option>Engagement des participants</option><option>Partenariat</option><option>Communication</option><option>Méthode / approche</option><option>Résultats / impact</option></select></div>
         </div>
         <div class="fr c1"><div class="fd"><label>Description</label><textarea rows="2" placeholder="Décrire la leçon..."></textarea></div></div>
@@ -815,6 +875,13 @@ function collect() {
     objectif_general: v('f-obj'), objectifs_specifiques: v('f-objs'),
     resume_narratif: v('f-res'),
     principales_realisations: v('f-real'),
+    changements_observes: document.querySelector('#chg-obs .chip.on')?.textContent || '',
+    types_changements: Array.from(document.querySelectorAll('#chg-detail-row .cg input:checked')).map(i=>i.parentElement.textContent.trim()).join(', '),
+    description_changement: v('f-chg-desc'),
+    bailleurs: Array.from(document.querySelectorAll('[id^="bail-"]:checked')).map(i=>i.id.replace('bail-','')).join(', '),
+    bailleurs_autre: v('f-bail-autre'),
+    suite: v('f-suite'),
+    responsable_suivi: v('f-resp-suivi'),
     objectifs_atteints: v('f-oa'), satisfaction_etoiles: starVal,
     precision_objectifs: v('f-oa-p'),
     icm_ref: v('f-icm'), icm_valeur: v('f-icmv'),
