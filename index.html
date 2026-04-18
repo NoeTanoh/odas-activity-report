@@ -934,7 +934,7 @@ function collect() {
 function genPDF() {
   const data = collect();
   if (!data.titre) {
-    toast('Remplissez au minimum le titre de l\'activité avant de générer le PDF.', 'err');
+    alert('⚠️ TITRE REQUIS\n\nVeuillez remplir le champ "Titre de l\'activité" dans la section 1 avant de générer le PDF.');
     return;
   }
   
