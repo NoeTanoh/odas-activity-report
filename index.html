@@ -934,279 +934,194 @@ function collect() {
 // ── GÉNÉRATION PDF AMÉLIORÉE AVEC DESIGN PROFESSIONNEL ─────────────────────────────────────
 function genPDF() {
   const data = collect();
-  
-  // Vérification du titre (avec message alert plus visible)
-  if (!data.titre || data.titre.trim() === '') {
-    alert("⚠️ TITRE REQUIS\n\nVeuillez remplir le champ Titre de l'activite dans la section 1 avant de generer le PDF.");
+
+  if (!data.titre || !data.titre.trim()) {
+    alert("Titre requis\n\nVeuillez remplir le champ Titre de l'activite avant de generer le PDF.");
     return;
   }
-  
+
   try {
     const doc = new jsPDF('p', 'mm', 'A4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    let y = 25;
-    const leftMargin = 20;
-    const rightMargin = pageWidth - 20;
-    const contentWidth = rightMargin - leftMargin;
-    const lineHeight = 6;
-    
-    // ═══════════════════════════════════════════════════════════════════
-    // HEADER PROFESSIONNEL AVEC COULEURS ODAS
-    // ═══════════════════════════════════════════════════════════════════
-    
-    // Fond header bleu ODAS
-    doc.setFillColor(13, 43, 94);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-    
-    // Logo placeholder (rectangle blanc)
-    doc.setFillColor(255, 255, 255);
-    doc.rect(leftMargin, 8, 12, 12, 'F');
-    
-    // Titre principal en blanc
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('CENTRE ODAS', leftMargin + 15, 15);
-    
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.text('SYNTHÈSE D\'ACTIVITÉ', leftMargin + 15, 22);
-    
-    // Date de génération à droite
-    doc.setFontSize(9);
-    doc.setTextColor(200, 200, 200);
-    const dateStr = 'Généré le : ' + new Date().toLocaleDateString('fr-FR', {
-      year: 'numeric', month: '2-digit', day: '2-digit', 
-      hour: '2-digit', minute: '2-digit'
-    });
-    doc.text(dateStr, rightMargin - doc.getTextWidth(dateStr), 30);
-    
-    // Reset couleurs pour le contenu
-    doc.setTextColor(0, 0, 0);
-    y = 45;
-    
-    // ═══════════════════════════════════════════════════════════════════
-    // INFORMATIONS PRINCIPALES AVEC STYLING
-    // ═══════════════════════════════════════════════════════════════════
-    
-    // Titre de l'activité - style principal
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(13, 43, 94);
-    doc.text('ACTIVITÉ', leftMargin, y);
-    y += lineHeight;
-    
-    // Encadré pour le titre
-    doc.setFillColor(245, 247, 250);
-    doc.rect(leftMargin, y - 2, contentWidth, 8, 'F');
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text(data.titre, leftMargin + 2, y + 3);
-    y += 12;
-    
-    // Informations de base en deux colonnes
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    
-    // Colonne 1
-    if (data.type && data.type !== '') {
-      doc.setFont('helvetica', 'bold');
-      doc.text('Type :', leftMargin, y);
+    const left = 20;
+    const right = pageWidth - 20;
+    const width = right - left;
+    const lineH = 6;
+    let y = 18;
+
+    const addFooter = () => {
+      doc.setDrawColor(13, 43, 94);
+      doc.line(left, pageHeight - 15, right, pageHeight - 15);
       doc.setFont('helvetica', 'normal');
-      doc.text(data.type, leftMargin + 25, y);
-      y += lineHeight;
-    }
-    
-    const dateActivite = data.date_debut || new Date().toLocaleDateString('fr-FR');
-    doc.setFont('helvetica', 'bold');
-    doc.text('Date :', leftMargin, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(dateActivite, leftMargin + 25, y);
-    y += lineHeight;
-    
-    // Lieu et pays
-    let location = '';
-    if (data.lieu) location += data.lieu;
-    if (data.pays) location += (location ? ', ' : '') + data.pays;
-    if (location) {
-      doc.setFont('helvetica', 'bold');
-      doc.text('Lieu :', leftMargin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(location, leftMargin + 25, y);
-      y += lineHeight;
-    }
-    
-    // Responsable
-    if (data.staff_responsable) {
-      doc.setFont('helvetica', 'bold');
-      doc.text('Responsable :', leftMargin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(data.staff_responsable, leftMargin + 25, y);
-      y += lineHeight;
-    }
-    
-    y += 8;
-    
-    // ═══════════════════════════════════════════════════════════════════
-    // SECTION PARTICIPANTS AVEC GRAPHIQUE SIMPLE
-    // ═══════════════════════════════════════════════════════════════════
-    
-    if (data.total_participants && parseInt(data.total_participants) > 0) {
-      // Header section
-      doc.setFillColor(13, 43, 94);
-      doc.rect(leftMargin, y - 2, contentWidth, 8, 'F');
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Centre ODAS - Plan Strategique 2025-2029', left, pageHeight - 8);
+    };
+
+    const ensureSpace = needed => {
+      if (y + needed <= pageHeight - 22) return;
+      addFooter();
+      doc.addPage();
+      y = 18;
+    };
+
+    const writeSection = (title, value, color) => {
+      if (!value) return;
+      const lines = doc.splitTextToSize(String(value), width - 10);
+      ensureSpace(14 + (lines.length * lineH));
+
+      doc.setFillColor(color[0], color[1], color[2]);
+      doc.rect(left, y - 1, width, 8, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
-      doc.text('👥 PARTICIPANTS', leftMargin + 2, y + 3);
+      doc.text(title, left + 3, y + 4);
+      y += 12;
+
       doc.setTextColor(0, 0, 0);
-      y += 10;
-      
-      // Statistiques participants
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      doc.text('Total participants : ' + data.total_participants, leftMargin + 5, y);
-      
-      // Graphique genre simple si disponible
-      if (data.pct_femmes && data.pct_femmes > 0) {
-        const femmesPct = parseFloat(data.pct_femmes);
-        const hommesPct = 100 - femmesPct;
-        
-        // Barre de répartition
+      doc.text(lines, left + 4, y);
+      y += (lines.length * lineH) + 4;
+    };
+
+    doc.setFillColor(13, 43, 94);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+
+    doc.setFillColor(255, 255, 255);
+    doc.rect(left, 8, 12, 12, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('CENTRE ODAS', left + 15, 15);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(14);
+    doc.text("SYNTHESE D'ACTIVITE", left + 15, 22);
+
+    const stamp = 'Genere le : ' + new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    doc.setFontSize(9);
+    doc.setTextColor(220, 220, 220);
+    doc.text(stamp, right - doc.getTextWidth(stamp), 30);
+
+    y = 48;
+    doc.setTextColor(13, 43, 94);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('ACTIVITE', left, y);
+    y += 7;
+
+    doc.setFillColor(245, 247, 250);
+    doc.rect(left, y - 2, width, 10, 'F');
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.text(data.titre, left + 3, y + 4);
+    y += 16;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    if (data.type) {
+      doc.text('Type :', left, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String(data.type), left + 28, y);
+      y += lineH;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date :', left, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(String(data.date_debut || new Date().toLocaleDateString('fr-FR')), left + 28, y);
+    y += lineH;
+
+    const location = [data.lieu, data.pays].filter(Boolean).join(', ');
+    if (location) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Lieu :', left, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(location, left + 28, y);
+      y += lineH;
+    }
+
+    if (data.staff_responsable) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Responsable :', left, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String(data.staff_responsable), left + 28, y);
+      y += lineH;
+    }
+
+    y += 6;
+
+    if (data.total_participants && parseInt(data.total_participants, 10) > 0) {
+      ensureSpace(24);
+      doc.setFillColor(13, 43, 94);
+      doc.rect(left, y - 1, width, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text('PARTICIPANTS', left + 3, y + 4);
+      y += 12;
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text('Total participants : ' + data.total_participants, left + 4, y);
+
+      if (data.pct_femmes !== '' && data.pct_femmes !== undefined) {
+        const femmesPct = parseFloat(data.pct_femmes) || 0;
+        const hommesPct = Math.max(0, 100 - femmesPct);
         const barWidth = 60;
         const barHeight = 4;
-        const barX = leftMargin + 5;
-        const barY = y + 6;
-        
-        // Partie femmes (rose)
-        doc.setFillColor(233, 30, 99);
-        doc.rect(barX, barY, (barWidth * femmesPct / 100), barHeight, 'F');
-        
-        // Partie hommes (bleu)
-        doc.setFillColor(33, 150, 243);
-        doc.rect(barX + (barWidth * femmesPct / 100), barY, (barWidth * hommesPct / 100), barHeight, 'F');
-        
-        // Labels
+        const barX = left + 4;
+        const barY = y + 7;
+
         doc.setFontSize(8);
         doc.text(femmesPct + '% F', barX, barY - 1);
-        doc.text(hommesPct + '% H', barX + barWidth - 15, barY - 1);
-        
-        y += 12;
+        doc.text(hommesPct + '% H', barX + barWidth - 12, barY - 1);
+
+        doc.setFillColor(233, 30, 99);
+        doc.rect(barX, barY, barWidth * femmesPct / 100, barHeight, 'F');
+
+        if (hommesPct > 0) {
+          doc.setFillColor(33, 150, 243);
+          doc.rect(barX + (barWidth * femmesPct / 100), barY, barWidth * hommesPct / 100, barHeight, 'F');
+        }
+
+        y += 14;
       } else {
         y += 8;
       }
     }
-    
-    // ═══════════════════════════════════════════════════════════════════
-    // CONTENU PRINCIPAL AVEC ICÔNES
-    // ═══════════════════════════════════════════════════════════════════
-    
-    // Objectifs
-    if (data.objectif_general) {
-      y += 5;
-      doc.setFillColor(76, 175, 80);
-      doc.rect(leftMargin, y - 2, contentWidth, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('🎯 OBJECTIFS', leftMargin + 2, y + 3);
-      doc.setTextColor(0, 0, 0);
-      y += 10;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const objLines = doc.splitTextToSize(data.objectif_general, contentWidth - 10);
-      doc.text(objLines, leftMargin + 5, y);
-      y += objLines.length * lineHeight + 5;
+
+    writeSection('OBJECTIFS', data.objectif_general, [76, 175, 80]);
+    writeSection('PRINCIPALES REALISATIONS', data.principales_realisations, [255, 152, 0]);
+
+    if (data.satisfaction_etoiles && parseInt(data.satisfaction_etoiles, 10) > 0) {
+      writeSection('EVALUATION', 'Satisfaction globale : ' + data.satisfaction_etoiles + '/5', [103, 58, 183]);
     }
-    
-    // Réalisations principales
-    if (data.principales_realisations) {
-      y += 5;
-      doc.setFillColor(255, 152, 0);
-      doc.rect(leftMargin, y - 2, contentWidth, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('✨ PRINCIPALES RÉALISATIONS', leftMargin + 2, y + 3);
-      doc.setTextColor(0, 0, 0);
-      y += 10;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      const realLines = doc.splitTextToSize(data.principales_realisations, contentWidth - 10);
-      doc.text(realLines, leftMargin + 5, y);
-      y += realLines.length * lineHeight + 5;
-    }
-    
-    // Évaluation avec étoiles visuelles
-    if (data.satisfaction_etoiles && parseInt(data.satisfaction_etoiles) > 0) {
-      y += 5;
-      doc.setFillColor(103, 58, 183);
-      doc.rect(leftMargin, y - 2, contentWidth, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('⭐ ÉVALUATION', leftMargin + 2, y + 3);
-      doc.setTextColor(0, 0, 0);
-      y += 10;
-      
-      // Étoiles visuelles
-      const rating = parseInt(data.satisfaction_etoiles);
-      let starsText = '';
-      for (let i = 1; i <= 5; i++) {
-        starsText += i <= rating ? '★' : '☆';
-      }
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(12);
-      doc.setTextColor(255, 193, 7);
-      doc.text(starsText, leftMargin + 5, y);
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(10);
-      doc.text(' (' + rating + '/5)', leftMargin + 35, y);
-      y += 10;
-    }
-    
-    // ═══════════════════════════════════════════════════════════════════
-    // FOOTER PROFESSIONNEL
-    // ═══════════════════════════════════════════════════════════════════
-    
-    // Ligne de séparation
-    doc.setDrawColor(13, 43, 94);
-    doc.line(leftMargin, pageHeight - 25, rightMargin, pageHeight - 25);
-    
-    // Footer text
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Centre ODAS — Plan Stratégique 2025-2029', leftMargin, pageHeight - 15);
-    
-    // Page number
-    doc.text('Page 1', rightMargin - 15, pageHeight - 15);
-    
-    // ═══════════════════════════════════════════════════════════════════
-    // SAUVEGARDE AVEC NOM INTELLIGENT
-    // ═══════════════════════════════════════════════════════════════════
-    
-    const cleanTitle = data.titre.replace(/[^a-zA-Z0-9À-ſ]/g, '_').substring(0, 30);
+
+    addFooter();
+
+    const cleanTitle = data.titre
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .substring(0, 30) || 'Activite';
+
     const fileName = 'ODAS_Synthese_' + cleanTitle + '_' + new Date().toISOString().substring(0, 10) + '.pdf';
     doc.save(fileName);
-    
-    // Message de succès amélioré
+
     setTimeout(() => {
-      alert('✅ PDF GÉNÉRÉ AVEC SUCCÈS !\n\n📄 Fichier : "' + fileName + '"\n📁 Emplacement : Dossier de téléchargements\n\n🎨 Design professionnel ODAS appliqué !');
+      alert('PDF genere avec succes.\n\nFichier : "' + fileName + '"');
     }, 100);
-    
   } catch (err) {
     console.error('Erreur PDF:', err);
-    alert('❌ ERREUR PDF\n\nUne erreur est survenue lors de la génération.\n\nDétails : ' + err.message + '\n\nVeuillez réessayer ou contacter l\'équipe technique.');
+    alert('Erreur lors de la generation du PDF.\n\nDetails : ' + err.message);
   }
 }
-  
 
 async function submitForm() {
   if (!document.getElementById('f-val').checked) {
@@ -1228,11 +1143,6 @@ async function submitForm() {
   const data = collect();
 
   try {
-    // Google Apps Script requires no-cors for cross-origin POST
-    // We use a form-encoded request for maximum compatibility
-    const formData = new FormData();
-    formData.append('data', JSON.stringify(data));
-    
     await fetch(GS_URL, {
       method: 'POST',
       mode: 'no-cors',
