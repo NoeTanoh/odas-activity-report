@@ -883,14 +883,14 @@ function collect() {
     titre: l.querySelectorAll('input')[0]?.value,
     statut: l.querySelector('select')?.value,
   }));
-  const hom2=+v('f-hom')||0, fem2=+v('f-fem')||0, nb2=+v('f-nb')||0, npp2=+v('f-npp')||0; const tot = hom2+fem2+nb2+npp2; const _totEl=document.getElementById('f-tot'); if(_totEl) _totEl.value=tot; const fem = fem2;
+  const fem = +v('f-fem')||0, tot = (+v('f-hom')||0)+(fem||0)+(+v('f-nb')||0)+(+v('f-npp')||0);
   return {
     id: 'ODAS-'+Date.now(),
     submitted_at: new Date().toISOString(),
     titre: v('f-titre'),
     type: v('f-type')==='autre' ? v('f-ta') : v('f-type'),
     date_debut: v('f-dd'), date_fin: v('f-df'), duree: v('f-dur'),
-    format: fmt, envergure: (document.querySelector('#env .chip.on')||{}).textContent?.trim()||'', langue: (document.querySelector('#lng .chip.on')||{}).textContent?.trim()||'', pays: v('f-pays'), lieu: v('f-lieu'),
+    format: fmt, envergure: (document.querySelector('#env .chip.on')||document.createElement('b')).textContent.trim(), langue: (document.querySelector('#lng .chip.on')||document.createElement('b')).textContent.trim(), pays: v('f-pays'), lieu: v('f-lieu'),
     axes_strategiques: axes, pta_ref: v('f-pta'),
     staff_responsable: v('f-staff') === 'autre' ? v('f-staff-autre') : v('f-staff'),
     titre_fonction: v('f-titre-fn'),
@@ -937,7 +937,7 @@ function genPDF() {
   
   // Vérification du titre (avec message alert plus visible)
   if (!data.titre || data.titre.trim() === '') {
-    alert(`⚠️ TITRE REQUIS\n\nVeuillez remplir le champ Titre de l'activite dans la section 1 avant de generer le PDF.`);
+    alert("⚠️ TITRE REQUIS - Veuillez remplir le champ Titre dans la section 1 avant de generer le PDF.");
     return;
   }
   
