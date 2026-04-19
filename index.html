@@ -941,6 +941,17 @@ function collect() {
   const paysChoisi = val('f-pays');
   const femmes = num('f-fem');
   const totalParticipants = getEffectiveTotalParticipants();
+  const titre = val('f-titre');
+  const typeActivite = typeChoisi === 'autre' ? val('f-ta') : typeChoisi;
+  const dateDebut = val('f-dd');
+  const dateFin = val('f-df');
+  const envergure = chipValue('env');
+  const formatActivite = chipValue('fmt');
+  const langueActivite = chipValue('lng');
+  const pays = paysChoisi === 'autre' ? val('f-pays-autre') : paysChoisi;
+  const lieu = val('f-lieu');
+  const staffResponsable = val('f-staff') === 'autre' ? val('f-staff-autre') : val('f-staff');
+  const titreFonction = val('f-titre-fn');
 
   const axes = Array.from(document.querySelectorAll('.ach.on'))
     .map(chip => chip.textContent.trim())
@@ -979,20 +990,44 @@ function collect() {
   return {
     id: 'ODAS-' + Date.now(),
     submitted_at: new Date().toISOString(),
-    titre: val('f-titre'),
-    type: typeChoisi === 'autre' ? val('f-ta') : typeChoisi,
-    date_debut: val('f-dd'),
-    date_fin: val('f-df'),
+    titre,
+    titre_activite: titre,
+    activity_title: titre,
+    type: typeActivite,
+    type_activite: typeActivite,
+    activity_type: typeActivite,
+    date_debut: dateDebut,
+    date_debut_activite: dateDebut,
+    debut: dateDebut,
+    start_date: dateDebut,
+    date_fin: dateFin,
+    date_fin_activite: dateFin,
+    fin: dateFin,
+    end_date: dateFin,
     duree: val('f-dur'),
-    envergure: chipValue('env'),
-    format: chipValue('fmt'),
-    langue: chipValue('lng'),
-    pays: paysChoisi === 'autre' ? val('f-pays-autre') : paysChoisi,
-    lieu: val('f-lieu'),
+    duree_jours: val('f-dur'),
+    envergure,
+    niveau_envergure: envergure,
+    format: formatActivite,
+    activity_format: formatActivite,
+    langue: langueActivite,
+    langue_principale: langueActivite,
+    pays,
+    pays_activite: pays,
+    country: pays,
+    lieu,
+    ville: lieu,
+    ville_lieu: lieu,
+    location: lieu,
     axes_strategiques: axes,
     pta_ref: val('f-pta'),
-    staff_responsable: val('f-staff') === 'autre' ? val('f-staff-autre') : val('f-staff'),
-    titre_fonction: val('f-titre-fn'),
+    reference_pta: val('f-pta'),
+    staff_responsable: staffResponsable,
+    staff: staffResponsable,
+    responsable: staffResponsable,
+    titre_fonction: titreFonction,
+    fonction: titreFonction,
+    role: titreFonction,
     bailleurs,
     bailleurs_autre: val('f-bail-autre'),
     profils_participants: profils,
@@ -1050,7 +1085,30 @@ function collect() {
     confidentialite: val('f-conf'),
     date_soumission_formulaire: val('f-dsub'),
     liste_presence_nom: document.getElementById('f-liste-presence')?.files?.[0]?.name || '',
+    form_payload_version: '2026-04-19-hotfix',
   };
+}
+
+function validateBeforeSubmit(data) {
+  const requiredFields = [
+    ['Titre de l’activité', data.titre],
+    ['Type d’activité', data.type],
+    ['Date de début', data.date_debut],
+    ['Staff responsable', data.staff_responsable],
+    ['Objectif général', data.objectif_general],
+    ['Résumé narratif', data.resume_narratif],
+  ];
+
+  const missing = requiredFields
+    .filter(([, value]) => !String(value || '').trim())
+    .map(([label]) => label);
+
+  if (missing.length) {
+    toast('Champs obligatoires manquants : ' + missing.join(', '), 'err');
+    return false;
+  }
+
+  return true;
 }
 
 // ── SUBMIT ────────────────────────────────────────────────────────────────────
@@ -1303,16 +1361,21 @@ async function submitForm() {
   toast('Envoi vers Google Sheets…', 'inf');
 
   const data = collect();
+  if (!validateBeforeSubmit(data)) {
+    btn.disabled = false;
+    btn.innerHTML = 'Soumettre le rapport ✓';
+    return;
+  }
 
   try {
     await fetch(GS_URL, {
       method: 'POST',
       mode: 'no-cors',
       body: JSON.stringify(data),
-      headers: { 'Content-Type': 'text/plain' }, // text/plain avoids CORS preflight
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // text/plain avoids CORS preflight
     });
     
-    // With no-cors we can't read the response but if no error = success
+    // With no-cors we can't inspect the response, so the payload is duplicated with alias keys.
     showSuccess();
   } catch (err) {
     btn.disabled = false;
