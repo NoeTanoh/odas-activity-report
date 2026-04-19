@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -134,7 +134,7 @@ tbody tr:hover{background:var(--s2)}
 .toast.vis{transform:translateY(0);opacity:1}
 .toast.ok{background:var(--gr)}.toast.err{background:#DC2626}.toast.inf{background:var(--navy)}
 @media(max-width:640px){
-  .hdr{padding:11px 14px}.main{padding:14px 14px 60px}.snav{padding:12px 14px 0}
+  .hdr{padding:11px 14px}main{padding:14px 14px 60px}.snav{padding:12px 14px 0}
   .c2,.c3{grid-template-columns:1fr}.rg{grid-template-columns:1fr}.stats{grid-template-columns:1fr}
 }
 </style>
@@ -908,7 +908,7 @@ function collect() {
     changements_observes: document.querySelector('#chg-obs .chip.on')?.textContent || '',
     types_changements: Array.from(document.querySelectorAll('#chg-detail-row .cg input:checked')).map(i=>i.parentElement.textContent.trim()).join(', '),
     description_changement: v('f-chg-desc'),
-    bailleurs: Array.from(document.querySelectorAll('[id^="bail-"]:checked')).map(i=>i.id==='bail-fjs'?'FJS':i.id==='bail-fjs-accomp'?'FJS Accompagnement':i.id==='bail-fjsi'?'FJSI':i.id==='bail-mofa'?'MOFA':i.id==='bail-packard'?'Packard':i.id==='bail-hewlett'?'Hewlett':i.id==='bail-sida'?'SIDA':i.id.replace('bail-','')).join(', '),
+    bailleurs: Array.from(document.querySelectorAll('[id^="bail-"]:checked')).map(i=>i.id.replace('bail-','')).join(', '),
     bailleurs_autre: v('f-bail-autre'),
     suite: v('f-suite'),
     responsable_suivi: v('f-resp-suivi'),
@@ -1207,100 +1207,6 @@ function genPDF() {
   }
 }
   
-  try {
-    const doc = new jsPDF('p', 'mm', 'A4');
-    const lineH = 7;
-    let y = 20;
-    
-    // En-tête
-    doc.setFontSize(16);
-    doc.setTextColor(13, 43, 94);
-    doc.text('CENTRE ODAS — SYNTHÈSE D\'ACTIVITÉ', 20, y);
-    y += 12;
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Généré le : ' + new Date().toLocaleString('fr-FR'), 20, y);
-    y += 12;
-    
-    // Titre
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text('Titre : ' + (data.titre || 'Non spécifié'), 20, y);
-    y += lineH;
-    
-    doc.text('Type : ' + (data.type || 'Non spécifié'), 20, y);
-    y += lineH;
-    
-    doc.text('Date : ' + (data.date_debut || '') + (data.date_fin && data.date_fin !== data.date_debut ? ' au ' + data.date_fin : ''), 20, y);
-    y += lineH;
-    
-    doc.text('Lieu : ' + (data.lieu || 'Non spécifié') + ', ' + (data.pays || 'Non spécifié'), 20, y);
-    y += lineH;
-    
-    doc.text('Responsable : ' + (data.staff_responsable || 'Non spécifié'), 20, y);
-    y += 10;
-    
-    // Participants
-    doc.setTextColor(13, 43, 94);
-    doc.text('PARTICIPANTS', 20, y);
-    y += lineH;
-    doc.setTextColor(0);
-    doc.text('Total : ' + (data.total_participants || 0) + ' participants', 25, y);
-    y += lineH;
-    if (data.pct_femmes > 0) {
-      doc.text('Dont ' + (data.pct_femmes || 0) + '% de femmes', 25, y);
-      y += lineH;
-    }
-    
-    // Objectifs
-    y += 3;
-    doc.setTextColor(13, 43, 94);
-    doc.text('OBJECTIFS', 20, y);
-    y += lineH;
-    doc.setTextColor(0);
-    if (data.objectif_general) {
-      const objLines = doc.splitTextToSize('• ' + data.objectif_general, 170);
-      doc.text(objLines, 25, y);
-      y += objLines.length * lineH;
-    }
-    
-    // Principales réalisations
-    if (data.principales_realisations) {
-      y += 3;
-      doc.setTextColor(13, 43, 94);
-      doc.text('PRINCIPALES RÉALISATIONS', 20, y);
-      y += lineH;
-      doc.setTextColor(0);
-      const realLines = doc.splitTextToSize(data.principales_realisations, 170);
-      doc.text(realLines, 25, y);
-      y += realLines.length * lineH;
-    }
-    
-    // Satisfaction
-    if (data.satisfaction_etoiles) {
-      y += 3;
-      doc.setTextColor(13, 43, 94);
-      doc.text('ÉVALUATION', 20, y);
-      y += lineH;
-      doc.setTextColor(0);
-      doc.text('Satisfaction globale : ' + '★'.repeat(data.satisfaction_etoiles) + ' (' + data.satisfaction_etoiles + '/5)', 25, y);
-      y += lineH;
-    }
-    
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text('Centre ODAS — Plan Stratégique 2025-2029', 20, 280);
-    
-    doc.save('ODAS_Synthese_' + (data.titre || 'Activite').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
-    toast('PDF généré avec succès !', 'ok');
-    
-  } catch (err) {
-    console.error('Erreur PDF:', err);
-    toast('Erreur lors de la génération du PDF. Vérifiez que vous avez rempli les champs principaux.', 'err');
-  }
-}
 
 async function submitForm() {
   if (!document.getElementById('f-val').checked) {
