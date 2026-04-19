@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -647,6 +647,7 @@ tbody tr:hover{background:var(--s2)}
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const GS_URL_KEY = 'odas_gs_url';
 let GS_URL = 'https://script.google.com/macros/s/AKfycbzWu3QXBSAKIWVMZEY1b4ztdQX0z93LXeN6K5QSbPPKrhK3-fb-p-uamLyzXVw1BkKK/exec';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TfvqK7EIFNGlvFAAWudCgkN-AxhVfgNr-2ScnrbVxOc/edit';
 let cur = 0, starVal = 0, livN = 0, pN = 0, lecN = 0;
 const TOTAL = 6;
 
@@ -713,14 +714,12 @@ function pickC(el, gid) {
   el.classList.add('on');
 }
 function calcStats() {
-  const t = +document.getElementById('f-tot').value || 0;
-  const f = +document.getElementById('f-fem').value || 0;
-  const h = +document.getElementById('f-hom').value || 0;
-  const nb = +document.getElementById('f-nb').value || 0;
-  const npp = +document.getElementById('f-npp').value || 0;
+  const t = getEffectiveTotalParticipants();
+  const f = num('f-fem');
+  const h = num('f-hom');
   document.getElementById('st-t').textContent = t;
-  document.getElementById('st-f').textContent = t > 0 ? Math.round(f/t*100)+'%' : '—';
-  document.getElementById('st-h').textContent = t > 0 ? Math.round(h/t*100)+'%' : '—';
+  document.getElementById('st-f').textContent = t > 0 ? Math.round(f / t * 100) + '%' : '—';
+  document.getElementById('st-h').textContent = t > 0 ? Math.round(h / t * 100) + '%' : '—';
 }
 function setStar(n) {
   starVal = n;
@@ -847,84 +846,210 @@ function updateNav() {
 }
 
 // ── RECAP ─────────────────────────────────────────────────────────────────────
+function val(id) {
+  return (document.getElementById(id)?.value || '').trim();
+}
+
+function num(id) {
+  const parsed = parseInt(document.getElementById(id)?.value, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function chipValue(groupId) {
+  return document.querySelector(`#${groupId} .chip.on`)?.textContent.trim() || '';
+}
+
+function checkedLabelValues(selector, { excludeIds = [], transform } = {}) {
+  return Array.from(document.querySelectorAll(selector))
+    .filter(input => !excludeIds.includes(input.id))
+    .map(input => {
+      const label = input.closest('.ci')?.textContent?.replace(/\s+/g, ' ').trim() || '';
+      return transform ? transform(label, input) : label;
+    })
+    .filter(Boolean);
+}
+
+function getEffectiveTotalParticipants() {
+  const totalSaisi = num('f-tot');
+  const totalGenre = num('f-hom') + num('f-fem') + num('f-nb') + num('f-npp');
+  return Math.max(totalSaisi, totalGenre);
+}
+
+function formatDisplayDate(value) {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString('fr-FR');
+}
+
+function pdfSafeText(value) {
+  return String(value ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/[‐‑–—]/g, '-')
+    .replace(/[“”«»]/g, '"')
+    .replace(/[’]/g, "'")
+    .replace(/[•●▪◦]/g, '-')
+    .replace(/[^\S\r\n]+/g, ' ')
+    .split('\n')
+    .map(line => Array.from(line).filter(ch => ch.charCodeAt(0) <= 255).join('').trimEnd())
+    .join('\n')
+    .trim();
+}
+
+function slugifyFileName(value) {
+  return pdfSafeText(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .substring(0, 40) || 'Activite';
+}
+
 function buildRecap() {
-  const axes = [...document.querySelectorAll('.ach.on')].map(c=>c.textContent).join(', ') || '—';
-  const fmt = document.querySelector('#fmt .chip.on')?.textContent || '—';
-  const oa = {complet:'✅ Totalement atteints',partiel:'⚠️ Partiellement atteints',non:'❌ Non atteints'};
-  const v = id => document.getElementById(id)?.value || '';
+  const data = collect();
+  const objectifsMap = {
+    complet: 'Totalement atteints',
+    partiel: 'Partiellement atteints',
+    non: 'Non atteints',
+  };
+  const periode = data.date_fin
+    ? `${formatDisplayDate(data.date_debut)} au ${formatDisplayDate(data.date_fin)}`
+    : formatDisplayDate(data.date_debut);
   const items = [
-    ['Activité', v('f-titre')||'—'], ['Type', v('f-type')||'—'],
-    ['Date début', v('f-dd')||'—'], ['Pays', v('f-pays')||'—'],
-    ['Format', fmt], ['Responsable', (v('f-staff')==='autre'?v('f-staff-autre'):v('f-staff'))||'—'], ['Titre / Fonction', v('f-titre-fn')||'—'],
-    ['Total participants', v('f-tot')||'0'], ['Dont femmes', v('f-fem')||'0'],
-    ['Objectifs', oa[v('f-oa')]||'—'], ['Satisfaction', starVal>0?'★'.repeat(starVal)+'☆'.repeat(5-starVal):'—'],
-    ['Axe(s)', axes], ['Référence PTA', v('f-pta')||'—'],
+    ['Activité', data.titre || '—'],
+    ['Type', data.type || '—'],
+    ['Période', periode],
+    ['Pays', data.pays || '—'],
+    ['Format', [data.envergure, data.format, data.langue].filter(Boolean).join(' | ') || '—'],
+    ['Responsable', data.staff_responsable || '—'],
+    ['Titre / Fonction', data.titre_fonction || '—'],
+    ['Total participants', String(data.total_participants || 0)],
+    ['Dont femmes', String(data.femmes || 0)],
+    ['Objectifs', objectifsMap[data.objectifs_atteints] || '—'],
+    ['Satisfaction', data.satisfaction_etoiles ? `${data.satisfaction_etoiles}/5` : '—'],
+    ['Axe(s)', data.axes_strategiques || '—'],
+    ['Référence PTA', data.pta_ref || '—'],
   ];
-  document.getElementById('recap').innerHTML = items.map(([l,val]) =>
-    `<div class="ri"><div class="rl">${l}</div><div class="rv">${val}</div></div>`).join('');
+
+  document.getElementById('recap').innerHTML = items
+    .map(([label, value]) => `<div class="ri"><div class="rl">${label}</div><div class="rv">${value}</div></div>`)
+    .join('');
 }
 
 // ── COLLECT DATA ──────────────────────────────────────────────────────────────
 function collect() {
-  const v = id => document.getElementById(id)?.value || '';
-  const axes = [...document.querySelectorAll('.ach.on')].map(c=>c.textContent).join(', ');
-  const fmt = document.querySelector('#fmt .chip.on')?.textContent || '';
-  const soc = document.querySelector('#soc .chip.on')?.textContent || '';
-  const med = document.querySelector('#med .chip.on')?.textContent || '';
-  const profils = [...document.querySelectorAll('#s1 .ci input:checked')].map(cb=>cb.closest('.ci').textContent.trim()).join(', ');
-  const livTypes = [...document.querySelectorAll('#s3 .ci input:checked')].map(cb=>cb.closest('.ci').textContent.trim()).join(', ');
-  const lecons = [...document.querySelectorAll('#lec-list .lecon')].map(l=>({
-    type: l.querySelector('select')?.value,
-    domaine: l.querySelectorAll('select')[1]?.value,
-    description: l.querySelectorAll('textarea')[0]?.value,
-    recommandation: l.querySelectorAll('textarea')[1]?.value,
-  }));
-  const livrables = [...document.getElementById('liv-list').children].map(l=>({
-    titre: l.querySelectorAll('input')[0]?.value,
-    statut: l.querySelector('select')?.value,
-  }));
-  const fem = +v('f-fem')||0, tot = (+v('f-hom')||0)+(fem||0)+(+v('f-nb')||0)+(+v('f-npp')||0);
+  const typeChoisi = val('f-type');
+  const paysChoisi = val('f-pays');
+  const femmes = num('f-fem');
+  const totalParticipants = getEffectiveTotalParticipants();
+
+  const axes = Array.from(document.querySelectorAll('.ach.on'))
+    .map(chip => chip.textContent.trim())
+    .join(', ');
+
+  const profils = checkedLabelValues('#s1 .ci input:checked').join(', ');
+  const livTypes = checkedLabelValues('#s3 .ci input:checked').join(', ');
+  const typesChangements = checkedLabelValues('#chg-detail-row .cg input:checked', {
+    transform: (label, input) => input.id === 'chg-autre-cb'
+      ? (val('f-chg-autre') ? `Autre: ${val('f-chg-autre')}` : '')
+      : label,
+  }).join(', ');
+  const bailleurs = checkedLabelValues('[id^="bail-"]:checked', {
+    excludeIds: ['bail-autre-cb'],
+  }).join(', ');
+
+  const lecons = Array.from(document.querySelectorAll('#lec-list .lecon'))
+    .map(block => ({
+      type: block.querySelector('select')?.value || '',
+      domaine: block.querySelectorAll('select')[1]?.value?.trim() || '',
+      description: block.querySelectorAll('textarea')[0]?.value?.trim() || '',
+      recommandation: block.querySelectorAll('textarea')[1]?.value?.trim() || '',
+    }))
+    .filter(item => item.description || item.recommandation || item.domaine || item.type);
+
+  const livrables = Array.from(document.getElementById('liv-list').children)
+    .map(block => ({
+      titre: block.querySelector('input[placeholder]')?.value?.trim() || '',
+      statut: block.querySelector('select')?.value?.trim() || '',
+      date_prevue: block.querySelector('input[type="date"]')?.value || '',
+      fichier: block.querySelector('.liv-file')?.files?.[0]?.name || '',
+      lien: block.querySelector('.liv-link')?.value?.trim() || '',
+    }))
+    .filter(item => item.titre || item.statut || item.date_prevue || item.fichier || item.lien);
+
   return {
-    id: 'ODAS-'+Date.now(),
+    id: 'ODAS-' + Date.now(),
     submitted_at: new Date().toISOString(),
-    titre: v('f-titre'),
-    type: v('f-type')==='autre' ? v('f-ta') : v('f-type'),
-    date_debut: v('f-dd'), date_fin: v('f-df'), duree: v('f-dur'),
-    format: fmt, envergure: (document.querySelector('#env .chip.on')||document.createElement('b')).textContent.trim(), langue: (document.querySelector('#lng .chip.on')||document.createElement('b')).textContent.trim(), pays: v('f-pays'), lieu: v('f-lieu'),
-    axes_strategiques: axes, pta_ref: v('f-pta'),
-    staff_responsable: v('f-staff') === 'autre' ? v('f-staff-autre') : v('f-staff'),
-    titre_fonction: v('f-titre-fn'),
+    titre: val('f-titre'),
+    type: typeChoisi === 'autre' ? val('f-ta') : typeChoisi,
+    date_debut: val('f-dd'),
+    date_fin: val('f-df'),
+    duree: val('f-dur'),
+    envergure: chipValue('env'),
+    format: chipValue('fmt'),
+    langue: chipValue('lng'),
+    pays: paysChoisi === 'autre' ? val('f-pays-autre') : paysChoisi,
+    lieu: val('f-lieu'),
+    axes_strategiques: axes,
+    pta_ref: val('f-pta'),
+    staff_responsable: val('f-staff') === 'autre' ? val('f-staff-autre') : val('f-staff'),
+    titre_fonction: val('f-titre-fn'),
+    bailleurs,
+    bailleurs_autre: val('f-bail-autre'),
     profils_participants: profils,
-    total_participants: tot, femmes: fem, hommes: +v('f-hom')||0,
-    non_binaire: +v('f-nb')||0, ne_prefere_pas: +v('f-npp')||0,
-    age_5_13: +v('f-a1')||0, age_14_15: +v('f-a2')||0, age_16_17: +v('f-a3')||0,
-    age_18_24: +v('f-a4')||0, age_25_35: +v('f-a5')||0, age_36_49: +v('f-a6')||0, age_50plus: +v('f-a7')||0,
-    pays_representes: +v('f-np')||0,
-    intervenants_externes: +v('f-ext')||0,
-    pct_femmes: tot>0 ? Math.round(fem/tot*100) : 0,
-    objectif_general: v('f-obj'), objectifs_specifiques: v('f-objs'),
-    resume_narratif: v('f-res'),
-    principales_realisations: v('f-real'),
-    changements_observes: document.querySelector('#chg-obs .chip.on')?.textContent || '',
-    types_changements: Array.from(document.querySelectorAll('#chg-detail-row .cg input:checked')).map(i=>i.parentElement.textContent.trim()).join(', '),
-    description_changement: v('f-chg-desc'),
-    bailleurs: Array.from(document.querySelectorAll('[id^="bail-"]:checked')).map(i=>i.id.replace('bail-','')).join(', '),
-    bailleurs_autre: v('f-bail-autre'),
-    suite: v('f-suite'),
-    responsable_suivi: v('f-resp-suivi'),
-    objectifs_atteints: v('f-oa'), satisfaction_etoiles: starVal,
-    precision_objectifs: v('f-oa-p'),
-    icm_ref: v('f-icm'), icm_valeur: v('f-icmv'),
-    defis: v('f-def'),
+    total_participants: totalParticipants,
+    hommes: num('f-hom'),
+    femmes,
+    non_binaire: num('f-nb'),
+    ne_prefere_pas: num('f-npp'),
+    pct_femmes: totalParticipants > 0 ? Math.round(femmes / totalParticipants * 100) : 0,
+    age_5_13: num('f-a1'),
+    age_14_15: num('f-a2'),
+    age_16_17: num('f-a3'),
+    age_18_24: num('f-a4'),
+    age_25_35: num('f-a5'),
+    age_36_49: num('f-a6'),
+    age_50plus: num('f-a7'),
+    nb_osc: num('pp-osc'),
+    nb_jlab: num('pp-jlab'),
+    nb_sante: num('pp-sante'),
+    nb_rech: num('pp-rech'),
+    nb_bail: num('pp-bail'),
+    nb_ong: num('pp-ong'),
+    nb_activ: num('pp-activ'),
+    nb_staff: num('pp-staff'),
+    nb_media: num('pp-media'),
+    nb_autre: num('pp-autre'),
+    pays_representes: num('f-np'),
+    intervenants_externes: num('f-ext'),
+    objectif_general: val('f-obj'),
+    objectifs_specifiques: val('f-objs'),
+    resume_narratif: val('f-res'),
+    principales_realisations: val('f-real'),
+    changements_observes: chipValue('chg-obs'),
+    types_changements: typesChangements,
+    description_changement: val('f-chg-desc'),
+    objectifs_atteints: val('f-oa'),
+    precision_objectifs: val('f-oa-p'),
+    satisfaction_etoiles: starVal || 0,
+    icm_ref: val('f-icm'),
+    icm_valeur: val('f-icmv'),
+    defis: val('f-def'),
     types_livrables: livTypes,
     livrables: JSON.stringify(livrables),
-    engagements: v('f-act'), suite: v('f-suite'),
-    photos_legende: v('f-pcap'), photos_lien: v('f-plnk'),
+    engagements: val('f-act'),
+    suite: val('f-suite'),
+    date_suivi: val('f-sd'),
+    responsable_suivi: val('f-resp-suivi'),
+    photos_legende: val('f-pcap'),
+    photos_lien: val('f-plnk'),
     lecons_apprises: JSON.stringify(lecons),
-    reseaux_sociaux: soc, couverture_medias: med,
-    liens_publications: v('f-lnks'),
-    commentaires_finaux: v('f-cfin'),
-    confidentialite: v('f-conf'),
+    reseaux_sociaux: chipValue('soc'),
+    couverture_medias: chipValue('med'),
+    liens_publications: val('f-lnks'),
+    commentaires_finaux: val('f-cfin'),
+    confidentialite: val('f-conf'),
+    date_soumission_formulaire: val('f-dsub'),
+    liste_presence_nom: document.getElementById('f-liste-presence')?.files?.[0]?.name || '',
   };
 }
 
@@ -934,6 +1059,11 @@ function collect() {
 // ── GÉNÉRATION PDF AMÉLIORÉE AVEC DESIGN PROFESSIONNEL ─────────────────────────────────────
 function genPDF() {
   const data = collect();
+  const objectifsMap = {
+    complet: 'Totalement atteints',
+    partiel: 'Partiellement atteints',
+    non: 'Non atteints',
+  };
 
   if (!data.titre || !data.titre.trim()) {
     alert("Titre requis\n\nVeuillez remplir le champ Titre de l'activite avant de generer le PDF.");
@@ -944,174 +1074,207 @@ function genPDF() {
     const doc = new jsPDF('p', 'mm', 'A4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const left = 20;
-    const right = pageWidth - 20;
+    const left = 18;
+    const right = pageWidth - 18;
     const width = right - left;
-    const lineH = 6;
-    let y = 18;
+    const bottomLimit = pageHeight - 20;
+    const palette = {
+      navy: [48, 61, 79],
+      text: [35, 35, 35],
+      muted: [110, 110, 110],
+      border: [214, 217, 221],
+      soft: [245, 246, 247],
+    };
+    let y = 22;
 
-    const addFooter = () => {
-      doc.setDrawColor(13, 43, 94);
-      doc.line(left, pageHeight - 15, right, pageHeight - 15);
+    const drawHeader = () => {
+      doc.setFillColor(...palette.navy);
+      doc.rect(0, 0, pageWidth, 10, 'F');
+      doc.setTextColor(...palette.navy);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(17);
+      doc.text('CENTRE ODAS', left, 18);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Centre ODAS - Plan Strategique 2025-2029', left, pageHeight - 8);
+      doc.setFontSize(11);
+      doc.text("Synthese d'activite", left, 24);
+      doc.setFontSize(8.5);
+      doc.setTextColor(...palette.muted);
+      const stamp = `Genere le ${new Date().toLocaleDateString('fr-FR')} a ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+      doc.text(stamp, right - doc.getTextWidth(stamp), 18);
+      y = 34;
     };
 
     const ensureSpace = needed => {
-      if (y + needed <= pageHeight - 22) return;
-      addFooter();
+      if (y + needed <= bottomLimit) return;
       doc.addPage();
-      y = 18;
+      drawHeader();
     };
 
-    const writeSection = (title, value, color) => {
-      if (!value) return;
-      const lines = doc.splitTextToSize(String(value), width - 10);
-      ensureSpace(14 + (lines.length * lineH));
-
-      doc.setFillColor(color[0], color[1], color[2]);
-      doc.rect(left, y - 1, width, 8, 'F');
-      doc.setTextColor(255, 255, 255);
+    const writeLabelValue = (label, value) => {
+      const clean = pdfSafeText(value);
+      if (!clean) return;
+      const labelWidth = 34;
+      const lines = doc.splitTextToSize(clean, width - labelWidth - 4);
+      ensureSpace(Math.max(6, lines.length * 5) + 2);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text(title, left + 3, y + 4);
-      y += 12;
-
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      doc.text(lines, left + 4, y);
-      y += (lines.length * lineH) + 4;
+      doc.setTextColor(...palette.text);
+      doc.text(label, left, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(lines, left + labelWidth, y);
+      y += Math.max(6, lines.length * 5);
     };
 
-    doc.setFillColor(13, 43, 94);
-    doc.rect(0, 0, pageWidth, 35, 'F');
-
-    doc.setFillColor(255, 255, 255);
-    doc.rect(left, 8, 12, 12, 'F');
-
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('CENTRE ODAS', left + 15, 15);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(14);
-    doc.text("SYNTHESE D'ACTIVITE", left + 15, 22);
-
-    const stamp = 'Genere le : ' + new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    doc.setFontSize(9);
-    doc.setTextColor(220, 220, 220);
-    doc.text(stamp, right - doc.getTextWidth(stamp), 30);
-
-    y = 48;
-    doc.setTextColor(13, 43, 94);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text('ACTIVITE', left, y);
-    y += 7;
-
-    doc.setFillColor(245, 247, 250);
-    doc.rect(left, y - 2, width, 10, 'F');
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.text(data.titre, left + 3, y + 4);
-    y += 16;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    if (data.type) {
-      doc.text('Type :', left, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(String(data.type), left + 28, y);
-      y += lineH;
-    }
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Date :', left, y);
-    doc.setFont('helvetica', 'normal');
-    doc.text(String(data.date_debut || new Date().toLocaleDateString('fr-FR')), left + 28, y);
-    y += lineH;
-
-    const location = [data.lieu, data.pays].filter(Boolean).join(', ');
-    if (location) {
+    const writeSection = (title, value) => {
+      const clean = pdfSafeText(value);
+      if (!clean) return;
+      const lines = doc.splitTextToSize(clean, width - 8);
+      ensureSpace(14 + (lines.length * 5));
+      doc.setDrawColor(...palette.border);
+      doc.setFillColor(...palette.soft);
+      doc.roundedRect(left, y, width, 8, 2, 2, 'FD');
       doc.setFont('helvetica', 'bold');
-      doc.text('Lieu :', left, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(location, left + 28, y);
-      y += lineH;
-    }
-
-    if (data.staff_responsable) {
-      doc.setFont('helvetica', 'bold');
-      doc.text('Responsable :', left, y);
-      doc.setFont('helvetica', 'normal');
-      doc.text(String(data.staff_responsable), left + 28, y);
-      y += lineH;
-    }
-
-    y += 6;
-
-    if (data.total_participants && parseInt(data.total_participants, 10) > 0) {
-      ensureSpace(24);
-      doc.setFillColor(13, 43, 94);
-      doc.rect(left, y - 1, width, 8, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.text('PARTICIPANTS', left + 3, y + 4);
+      doc.setFontSize(10);
+      doc.setTextColor(...palette.navy);
+      doc.text(title, left + 4, y + 5.2);
       y += 12;
-
-      doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
-      doc.text('Total participants : ' + data.total_participants, left + 4, y);
+      doc.setTextColor(...palette.text);
+      doc.text(lines, left + 2, y);
+      y += lines.length * 5 + 4;
+    };
 
-      if (data.pct_femmes !== '' && data.pct_femmes !== undefined) {
-        const femmesPct = parseFloat(data.pct_femmes) || 0;
-        const hommesPct = Math.max(0, 100 - femmesPct);
-        const barWidth = 60;
-        const barHeight = 4;
-        const barX = left + 4;
-        const barY = y + 7;
+    drawHeader();
 
-        doc.setFontSize(8);
-        doc.text(femmesPct + '% F', barX, barY - 1);
-        doc.text(hommesPct + '% H', barX + barWidth - 12, barY - 1);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...palette.text);
+    const titleLines = doc.splitTextToSize(pdfSafeText(data.titre), width);
+    doc.text(titleLines, left, y);
+    y += titleLines.length * 6 + 4;
 
-        doc.setFillColor(233, 30, 99);
-        doc.rect(barX, barY, barWidth * femmesPct / 100, barHeight, 'F');
+    const periode = data.date_fin
+      ? `${formatDisplayDate(data.date_debut)} au ${formatDisplayDate(data.date_fin)}`
+      : formatDisplayDate(data.date_debut || new Date().toISOString().split('T')[0]);
 
-        if (hommesPct > 0) {
-          doc.setFillColor(33, 150, 243);
-          doc.rect(barX + (barWidth * femmesPct / 100), barY, barWidth * hommesPct / 100, barHeight, 'F');
-        }
+    writeLabelValue('Type', data.type);
+    writeLabelValue('Periode', periode);
+    writeLabelValue('Duree', data.duree ? `${data.duree} jour(s)` : '');
+    writeLabelValue('Localisation', [data.lieu, data.pays].filter(Boolean).join(', '));
+    writeLabelValue('Cadre', [data.envergure, data.format, data.langue].filter(Boolean).join(' | '));
+    writeLabelValue('Responsable', data.staff_responsable);
+    writeLabelValue('Titre / fonction', data.titre_fonction);
+    writeLabelValue('Reference PTA', data.pta_ref);
+    writeLabelValue('Axe(s)', data.axes_strategiques);
+    y += 3;
 
-        y += 14;
-      } else {
-        y += 8;
+    writeSection('Participants', [
+      `Total participants : ${data.total_participants || 0}`,
+      `Femmes : ${data.femmes || 0} (${data.pct_femmes || 0}%)`,
+      `Hommes : ${data.hommes || 0}`,
+      `Non binaire : ${data.non_binaire || 0}`,
+      `Ne prefere pas partager : ${data.ne_prefere_pas || 0}`,
+      `Pays representes : ${data.pays_representes || 0}`,
+      `Intervenants externes : ${data.intervenants_externes || 0}`,
+    ].join('\n'));
+
+    writeSection('Objectif general', data.objectif_general);
+    writeSection('Objectifs specifiques', data.objectifs_specifiques);
+    writeSection('Resume narratif', data.resume_narratif);
+    writeSection('Principales realisations', data.principales_realisations);
+
+    const changements = [
+      data.changements_observes ? `Observation : ${data.changements_observes}` : '',
+      data.types_changements ? `Types : ${data.types_changements}` : '',
+      data.description_changement ? `Description : ${data.description_changement}` : '',
+    ].filter(Boolean).join('\n');
+    writeSection('Changements observes', changements);
+
+    const evaluation = [
+      data.objectifs_atteints ? `Objectifs : ${objectifsMap[data.objectifs_atteints] || data.objectifs_atteints}` : '',
+      data.precision_objectifs ? `Precision : ${data.precision_objectifs}` : '',
+      data.satisfaction_etoiles ? `Satisfaction : ${data.satisfaction_etoiles}/5` : '',
+      data.icm_ref ? `Indicateur ICM : ${data.icm_ref}` : '',
+      data.icm_valeur ? `Valeur realisee : ${data.icm_valeur}` : '',
+    ].filter(Boolean).join('\n');
+    writeSection('Evaluation', evaluation);
+    writeSection('Defis / contraintes', data.defis);
+
+    const livrables = (() => {
+      try {
+        return JSON.parse(data.livrables || '[]');
+      } catch (e) {
+        return [];
       }
+    })();
+    const livrablesText = [
+      data.types_livrables ? `Types : ${data.types_livrables}` : '',
+      ...livrables.map((item, index) => {
+        const details = [
+          item.titre,
+          item.statut,
+          item.date_prevue ? `prevu le ${formatDisplayDate(item.date_prevue)}` : '',
+          item.fichier ? `fichier : ${item.fichier}` : '',
+          item.lien ? `lien : ${item.lien}` : '',
+        ].filter(Boolean).join(' | ');
+        return details ? `${index + 1}. ${details}` : '';
+      }),
+    ].filter(Boolean).join('\n');
+    writeSection('Livrables', livrablesText);
+
+    const suivi = [
+      data.engagements ? `Engagements : ${data.engagements}` : '',
+      data.suite ? `Suite prevue : ${data.suite}` : '',
+      data.date_suivi ? `Date de suivi : ${formatDisplayDate(data.date_suivi)}` : '',
+      data.responsable_suivi ? `Responsable du suivi : ${data.responsable_suivi}` : '',
+    ].filter(Boolean).join('\n');
+    writeSection('Suivi', suivi);
+
+    const media = [
+      data.photos_legende ? `Legende photos : ${data.photos_legende}` : '',
+      data.photos_lien ? `Lien photos : ${data.photos_lien}` : '',
+      data.reseaux_sociaux ? `Reseaux sociaux : ${data.reseaux_sociaux}` : '',
+      data.couverture_medias ? `Couverture medias : ${data.couverture_medias}` : '',
+      data.liens_publications ? `Liens publications : ${data.liens_publications}` : '',
+    ].filter(Boolean).join('\n');
+    writeSection('Medias et visibilite', media);
+
+    const lecons = (() => {
+      try {
+        return JSON.parse(data.lecons_apprises || '[]');
+      } catch (e) {
+        return [];
+      }
+    })();
+    const leconsText = lecons
+      .map((item, index) => {
+        const details = [
+          item.type ? `Type ${item.type}` : '',
+          item.domaine,
+          item.description,
+          item.recommandation ? `Recommandation : ${item.recommandation}` : '',
+        ].filter(Boolean).join(' | ');
+        return details ? `${index + 1}. ${details}` : '';
+      })
+      .filter(Boolean)
+      .join('\n');
+    writeSection('Lecons apprises', leconsText);
+    writeSection('Commentaires finaux', data.commentaires_finaux);
+
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
+      doc.setPage(pageNumber);
+      doc.setDrawColor(...palette.border);
+      doc.line(left, pageHeight - 12, right, pageHeight - 12);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...palette.muted);
+      doc.text('Centre ODAS', left, pageHeight - 6);
+      doc.text(`Page ${pageNumber}/${pageCount}`, right - 12, pageHeight - 6);
     }
 
-    writeSection('OBJECTIFS', data.objectif_general, [76, 175, 80]);
-    writeSection('PRINCIPALES REALISATIONS', data.principales_realisations, [255, 152, 0]);
-
-    if (data.satisfaction_etoiles && parseInt(data.satisfaction_etoiles, 10) > 0) {
-      writeSection('EVALUATION', 'Satisfaction globale : ' + data.satisfaction_etoiles + '/5', [103, 58, 183]);
-    }
-
-    addFooter();
-
-    const cleanTitle = data.titre
-      .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-zA-Z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '')
-      .substring(0, 30) || 'Activite';
-
-    const fileName = 'ODAS_Synthese_' + cleanTitle + '_' + new Date().toISOString().substring(0, 10) + '.pdf';
+    const fileName = `ODAS_Synthese_${slugifyFileName(data.titre)}_${new Date().toISOString().substring(0, 10)}.pdf`;
     doc.save(fileName);
 
     setTimeout(() => {
@@ -1122,7 +1285,6 @@ function genPDF() {
     alert('Erreur lors de la generation du PDF.\n\nDetails : ' + err.message);
   }
 }
-
 async function submitForm() {
   if (!document.getElementById('f-val').checked) {
     toast('Cochez la case de confirmation avant de soumettre.', 'err');
@@ -1165,8 +1327,7 @@ function showSuccess() {
   document.getElementById('snav').style.display = 'none';
   document.getElementById('pb').style.width = '100%';
   document.getElementById('succ').classList.add('vis');
-  // Set sheet link — extract spreadsheet from URL if possible or guide user
-  document.getElementById('sheet-link').href = 'https://docs.google.com/spreadsheets/';
+  document.getElementById('sheet-link').href = SHEET_URL;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1182,3 +1343,4 @@ function toast(msg, type='inf') {
 </script>
 </body>
 </html>
+
