@@ -452,12 +452,12 @@ tbody tr:hover{background:var(--s2)}
   <div class="sh"><div class="si ig">📋</div><div><h2>Déroulement de l'activité</h2><p>Objectifs, résumé narratif, résultats et indicateurs.</p></div></div>
   <div class="card">
     <div class="ct">Objectifs</div>
-    <div class="fr c1"><div class="fd"><label>Objectif général<span class="req">*</span></label><textarea id="f-obj" rows="3" placeholder="Décrire l'objectif principal..."></textarea></div></div>
+    <div class="fr c1"><div class="fd"><label>Objectif général</label><textarea id="f-obj" rows="3" placeholder="Décrire l'objectif principal..."></textarea></div></div>
     <div class="fr c1"><div class="fd"><label>Objectifs spécifiques</label><textarea id="f-objs" rows="3" placeholder="1. ...   2. ...   3. ..."></textarea></div></div>
   </div>
   <div class="card">
     <div class="ct">Principales réalisations</div>
-    <div class="fr c1"><div class="fd"><label>Résumé narratif<span class="req">*</span></label><textarea id="f-res" rows="5" placeholder="Décrire le déroulement, les points abordés, les échanges clés..."></textarea></div></div>
+    <div class="fr c1"><div class="fd"><label>Résumé narratif</label><textarea id="f-res" rows="5" placeholder="Décrire le déroulement, les points abordés, les échanges clés..."></textarea></div></div>
     <div class="fr c1"><div class="fd"><label>Principales réalisations</label><span class="hint">Lister les résultats concrets obtenus lors de cette activité</span><textarea id="f-real" rows="4" placeholder="— Réalisation 1 :&#10;— Réalisation 2 :&#10;— Réalisation 3 :"></textarea></div></div>
     <div class="card" style="margin-bottom:0;border:none;padding:0">
       <div class="ct">Changements observés</div>
@@ -1086,6 +1086,17 @@ function collect() {
     date_soumission_formulaire: val('f-dsub'),
     liste_presence_nom: document.getElementById('f-liste-presence')?.files?.[0]?.name || '',
     form_payload_version: '2026-04-19-hotfix',
+    raw_identification_snapshot: JSON.stringify({
+      titre_input: document.getElementById('f-titre')?.value || '',
+      type_input: document.getElementById('f-type')?.value || '',
+      type_autre_input: document.getElementById('f-ta')?.value || '',
+      date_debut_input: document.getElementById('f-dd')?.value || '',
+      date_fin_input: document.getElementById('f-df')?.value || '',
+      duree_input: document.getElementById('f-dur')?.value || '',
+      pays_input: document.getElementById('f-pays')?.value || '',
+      lieu_input: document.getElementById('f-lieu')?.value || '',
+      staff_input: document.getElementById('f-staff')?.value || '',
+    }),
   };
 }
 
@@ -1102,7 +1113,7 @@ function validateBeforeSubmit(data) {
     .map(([label]) => label);
 
   if (missing.length) {
-    toast('Champs obligatoires manquants : ' + missing.join(', '), 'err');
+    toast('Page identification uniquement : ' + missing.join(', '), 'err');
     return false;
   }
 
