@@ -908,7 +908,7 @@ function collect() {
     changements_observes: document.querySelector('#chg-obs .chip.on')?.textContent || '',
     types_changements: Array.from(document.querySelectorAll('#chg-detail-row .cg input:checked')).map(i=>i.parentElement.textContent.trim()).join(', '),
     description_changement: v('f-chg-desc'),
-    bailleurs: Array.from(document.querySelectorAll('[id^="bail-"]:checked')).map(i=>i.id.replace('bail-','')).join(', '),
+    bailleurs: Array.from(document.querySelectorAll('[id^="bail-"]:checked')).map(i=>i.id==='bail-fjs'?'FJS':i.id==='bail-fjs-accomp'?'FJS Accompagnement':i.id==='bail-fjsi'?'FJSI':i.id==='bail-mofa'?'MOFA':i.id==='bail-packard'?'Packard':i.id==='bail-hewlett'?'Hewlett':i.id==='bail-sida'?'SIDA':i.id.replace('bail-','')).join(', '),
     bailleurs_autre: v('f-bail-autre'),
     suite: v('f-suite'),
     responsable_suivi: v('f-resp-suivi'),
@@ -1284,7 +1284,7 @@ function genPDF() {
       doc.text('ÉVALUATION', 20, y);
       y += lineH;
       doc.setTextColor(0);
-      doc.text('Satisfaction globale : ' + '★'.repeat(data.satisfaction_etoiles) + ' (' + data.satisfaction_etoiles + '/5)', 25, y););
+      doc.text('Satisfaction globale : ' + '★'.repeat(data.satisfaction_etoiles) + ' (' + data.satisfaction_etoiles + '/5)', 25, y);
       y += lineH;
     }
     
