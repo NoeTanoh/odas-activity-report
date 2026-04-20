@@ -624,7 +624,7 @@ tbody tr:hover{background:var(--s2)}
   </div>
   <div class="br">
     <button class="btn bp" onclick="prev()">← Retour</button>
-    <button class="btn" style="background:#2E7D5F;color:white;margin-right:8px" onclick="genPDF()">📄 Imprimer synthèse PDF</button>
+    <button class="btn" style="background:#2E7D5F;color:white;margin-right:8px" onclick="genPDF()">📄 Imprimer le rapport complet (PDF)</button>
     <button class="btn bs" id="sub-btn" onclick="submitForm()">Soumettre le rapport ✓</button>
   </div>
 </section>
@@ -635,7 +635,8 @@ tbody tr:hover{background:var(--s2)}
   <h2>Rapport soumis avec succès !</h2>
   <p>La fiche a été enregistrée dans le <strong>Google Sheets ODAS</strong>. Elle est maintenant disponible pour l'équipe MEAL.</p>
   <div class="succ-acts">
-    <a class="succ-sheet" id="sheet-link" href="#" target="_blank">📊 Ouvrir Google Sheets</a>
+    <button class="btn" style="background:#2E7D5F;color:white" onclick="genPDF()">📄 Imprimer le rapport complet (PDF)</button>
+    <a class="succ-sheet" id="sheet-link" href="#" target="_blank" rel="noopener noreferrer" onclick="return openSharedSheet(event)">📊 Ouvrir Google Sheets</a>
     <button class="btn bn" onclick="location.reload()">＋ Nouvelle activité</button>
   </div>
 </div>
@@ -647,7 +648,7 @@ tbody tr:hover{background:var(--s2)}
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const GS_URL_KEY = 'odas_gs_url';
 let GS_URL = 'https://script.google.com/macros/s/AKfycbzWu3QXBSAKIWVMZEY1b4ztdQX0z93LXeN6K5QSbPPKrhK3-fb-p-uamLyzXVw1BkKK/exec';
-const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TfvqK7EIFNGlvFAAWudCgkN-AxhVfgNr-2ScnrbVxOc/edit';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TfvqK7EIFNGlvFAAWudCgkN-AxhVfgNr-2ScnrbVxOc/edit#gid=0';
 let cur = 0, starVal = 0, livN = 0, pN = 0, lecN = 0;
 const TOTAL = 6;
 
@@ -1401,6 +1402,15 @@ function showSuccess() {
   document.getElementById('succ').classList.add('vis');
   document.getElementById('sheet-link').href = SHEET_URL;
   window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function openSharedSheet(event) {
+  if (event) event.preventDefault();
+  const opened = window.open(SHEET_URL, '_blank', 'noopener,noreferrer');
+  if (!opened) {
+    window.location.href = SHEET_URL;
+  }
+  return false;
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
